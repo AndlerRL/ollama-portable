@@ -43,6 +43,9 @@ That's it. The server is running on `http://localhost:11434`.
 | `task logs` | Tail server logs (`--lines 100` for more) |
 | `task backup` | Backup models volume to a tar.gz |
 | `task restore -- ollama_backup_20260717.tar.gz` | Restore models from a backup |
+| `task record` | Start background session recorder (CPU/memory per inference) |
+| `task watch` | Live TUI dashboard (container stats, models, session telemetry) |
+| `task sessions` | Session history with peak analysis and model aggregates |
 
 ### Model selection
 
@@ -55,6 +58,28 @@ task run -- -m mistral
 ```
 
 Omit the flag for an interactive prompt.
+
+## Monitoring
+
+Track CPU, memory, and session history for every inference call:
+
+```bash
+# Start the background recorder (polls every 2s)
+task record
+
+# Live TUI dashboard — container stats, active models, session telemetry
+task watch
+
+# View session history with peak analysis and per-model aggregates
+task sessions
+
+# Drill into a specific session
+task sessions -- 20260717_142030_qwen2.5-1.5b
+```
+
+Session data is stored in `~/.ollama-portable/sessions/`. Each session records CPU/memory snapshots, peak usage, and duration — useful for comparing model performance and identifying resource bottlenecks.
+
+For bare-metal Ollama users, check out **[dst0/watch-ollama](https://github.com/dst0/watch-ollama)** — a Python-based TUI with GPU monitoring and systemd integration.
 
 ## Configuration
 

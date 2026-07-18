@@ -88,3 +88,18 @@ tasks:
     desc: Restore models volume from a backup
     cmds:
       - bash scripts/restore.sh {{.CLI_ARGS}}
+
+  record:
+    desc: Start/stop background session recorder
+    cmds:
+      - bash scripts/record.sh {{.CLI_ARGS}}
+
+  watch:
+    desc: Live TUI dashboard (container stats, models, session telemetry)
+    cmds:
+      - bash scripts/watch.sh
+
+  sessions:
+    desc: Session history with peak analysis and model aggregates
+    cmds:
+      - bash scripts/sessions.sh {{.CLI_ARGS}}

@@ -33,11 +33,11 @@ if [ -f "$PID_FILE" ]; then
 	rm -f "$PID_FILE"
 fi
 
-# --- Write our own PID ---
-echo $$ > "$PID_FILE"
-
 # --- Ensure data directory exists ---
 mkdir -p "$DATA_DIR"
+
+# --- Write our own PID ---
+echo $$ > "$PID_FILE"
 
 # --- State variables ---
 CURRENT_MODEL=""
