@@ -1,0 +1,90 @@
+version: "3"
+
+dotenv: [".env"]
+silent: true
+
+tasks:
+  boot:
+    desc: Start ollama_server and pull a model
+    cmds:
+      - bash scripts/init.sh {{.CLI_ARGS}}
+      - echo "Waiting 5s for ollama_server to start ..."
+      - sleep 5
+
+  reboot:
+    desc: Tear down and boot fresh
+    cmds:
+      - task down
+      - task boot
+
+  up:
+    desc: Start all services (ollama_server + optional webui)
+    cmds:
+      - docker compose up -d --build
+
+  webui:
+    desc: Start ollama_server with Open WebUI
+    cmds:
+      - docker compose --profile webui up -d --build
+
+  down:
+    desc: Tear down everything (removes volumes)
+    cmds:
+      - docker compose --profile webui down -v --remove-orphans
+
+  stop:
+    desc: Stop all services (keeps volumes)
+    cmds:
+      - docker compose --profile webui stop
+
+  reload:
+    desc: Tear down and restart all services
+    cmds:
+      - task down
+      - sleep 5
+      - docker compose --profile webui up -d --build
+
+  pull:
+    desc: Pull a model into the running container
+    cmds:
+      - bash scripts/pull.sh {{.CLI_ARGS}}
+
+  list:
+    desc: List all pulled models
+    cmds:
+      - bash scripts/list.sh
+
+  rm:
+    desc: Remove a model
+    cmds:
+      - bash scripts/rm.sh {{.CLI_ARGS}}
+
+  run:
+    desc: Start interactive chat with a model
+    cmds:
+      - bash scripts/run.sh {{.CLI_ARGS}}
+
+  show:
+    desc: Show model details
+    cmds:
+      - bash scripts/show.sh {{.CLI_ARGS}}
+
+  status:
+    desc: Health check and loaded models
+    cmds:
+      - bash scripts/status.sh
+
+  logs:
+    desc: Tail server logs
+    cmds:
+      - bash scripts/logs.sh {{.CLI_ARGS}}
+
+  backup:
+    desc: Backup the models volume to a tar.gz
+    cmds:
+      - bash scripts/backup.sh
+
+  restore:
+    desc: Restore models volume from a backup
+    cmds:
+      - bash scripts/restore.sh {{.CLI_ARGS}}

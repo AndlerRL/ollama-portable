@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  ollama_server:
+    image: ollama/ollama:latest
+    container_name: ollama_server
+    ports:
+      - "${OLLAMA_HOST_PORT:-11434}:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    restart: always
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: ${OLLAMA_GPU:-nvidia}
+              count: ${OLLAMA_GPU_COUNT:-all}
+              capabilities: [gpu]
+
+  ollama_model_puller:
+    image: ollama/ollama:latest
+    container_name: ollama_model_puller
+    volumes:
+      - ollama_storage:/root/.ollama
+    entrypoint: /bin/sh
+    command: -c "sleep 5 && ollama pull ${MODEL:-qwen2.5:1.5b}"
+    depends_on:
+      - ollama_server
+
+  open_webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open_webui
+    ports:
+      - "${WEBUI_HOST_PORT:-3000}:8080"
+    volumes:
+      - open_webui_data:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama_server:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
+    depends_on:
+      - ollama_server
+    restart: always
+    profiles:
+      - webui
+
+volumes:
+  ollama_storage:
+    name: ollama_storage
+  open_webui_data:
+    name: open_webui_data
