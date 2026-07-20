@@ -11,13 +11,6 @@ services:
     restart: always
     environment:
       - OLLAMA_HOST=0.0.0.0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: ${OLLAMA_GPU:-nvidia}
-              count: ${OLLAMA_GPU_COUNT:-all}
-              capabilities: [gpu]
 
   ollama_model_puller:
     image: ollama/ollama:latest

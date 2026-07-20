@@ -46,6 +46,7 @@ That's it. The server is running on `http://localhost:11434`.
 | `task record` | Start background session recorder (CPU/memory per inference) |
 | `task watch` | Live TUI dashboard (container stats, models, session telemetry) |
 | `task sessions` | Session history with peak analysis and model aggregates |
+| `task detect` | Detect host hardware and show recommended configuration |
 
 ### Model selection
 
@@ -58,6 +59,24 @@ task run -- -m mistral
 ```
 
 Omit the flag for an interactive prompt.
+
+## Hardware Detection
+
+The project auto-detects your GPU and selects the right Docker Compose configuration:
+
+```bash
+# Check what hardware you have
+task detect
+```
+
+| GPU | Detection | Compose files |
+|---|---|---|
+| NVIDIA | `nvidia-smi` found | `docker-compose.yml` + `docker-compose.gpu-nvidia.yml` |
+| AMD | `rocm-smi` or `amd-smi` found | `docker-compose.yml` + `docker-compose.gpu-amd.yml` |
+| Apple Silicon | `sysctl` reports Apple CPU | `docker-compose.yml` (Metal via Ollama built-in) |
+| CPU-only | None of the above | `docker-compose.yml` |
+
+All `docker compose` commands in the Taskfile route through `scripts/compose.sh`, which sources `detect.sh` to pick the right override files. No manual configuration needed.
 
 ## Monitoring
 

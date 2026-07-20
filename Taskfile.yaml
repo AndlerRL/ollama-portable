@@ -20,29 +20,29 @@ tasks:
   up:
     desc: Start all services (ollama_server + optional webui)
     cmds:
-      - docker compose up -d --build
+      - bash scripts/compose.sh up -d --build
 
   webui:
     desc: Start ollama_server with Open WebUI
     cmds:
-      - docker compose --profile webui up -d --build
+      - bash scripts/compose.sh --profile webui up -d --build
 
   down:
     desc: Tear down everything (removes volumes)
     cmds:
-      - docker compose --profile webui down -v --remove-orphans
+      - bash scripts/compose.sh --profile webui down -v --remove-orphans
 
   stop:
     desc: Stop all services (keeps volumes)
     cmds:
-      - docker compose --profile webui stop
+      - bash scripts/compose.sh --profile webui stop
 
   reload:
     desc: Tear down and restart all services
     cmds:
       - task down
       - sleep 5
-      - docker compose --profile webui up -d --build
+      - bash scripts/compose.sh --profile webui up -d --build
 
   pull:
     desc: Pull a model into the running container
@@ -103,3 +103,8 @@ tasks:
     desc: Session history with peak analysis and model aggregates
     cmds:
       - bash scripts/sessions.sh {{.CLI_ARGS}}
+
+  detect:
+    desc: Detect host hardware and show recommended configuration
+    cmds:
+      - bash scripts/detect.sh --print

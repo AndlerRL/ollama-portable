@@ -48,4 +48,10 @@ fi
 
 echo -e "\nExecuting environment with model: **$SELECTED_MODEL**\n"
 
-MODEL=$SELECTED_MODEL docker compose -f "$(dirname "$0")/../docker-compose.yml" up -d
+# Detect hardware and get the right compose files
+SCRIPT_DIR="$(dirname "$0")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$SCRIPT_DIR/detect.sh"
+
+cd "$PROJECT_ROOT"
+MODEL=$SELECTED_MODEL docker compose $COMPOSE_FILES up -d

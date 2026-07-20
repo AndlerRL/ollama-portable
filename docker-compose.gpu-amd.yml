@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  ollama_server:
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
