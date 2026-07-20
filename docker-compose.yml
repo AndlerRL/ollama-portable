@@ -11,23 +11,27 @@ services:
     restart: always
     environment:
       - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
 
   ollama_model_puller:
     image: ollama/ollama:latest
     container_name: ollama_model_puller
     volumes:
       - ollama_storage:/root/.ollama
-    environment:
-      - OLLAMA_HOST=ollama_server:11434
     entrypoint: /bin/sh
     command:
       - -c
       - |
-        echo 'Waiting for ollama_server to be ready...';
+        echo 'Waiting for ollama_server to be healthy...';
         for i in $$(seq 1 30); do
-          if curl -s http://ollama_server:11434/api/tags >/dev/null 2>&1; then
+          if curl -sf http://ollama_server:11434/api/tags >/dev/null 2>&1; then
             echo 'Server ready. Pulling model...';
-            ollama pull $${MODEL:-qwen2.5:1.5b};
+            OLLAMA_HOST=ollama_server:11434 ollama pull $${MODEL:-qwen2.5:1.5b};
             exit 0;
           fi;
           echo "Attempt $$i/30 - server not ready, retrying in 2s...";
@@ -36,7 +40,8 @@ services:
         echo 'ERROR: ollama_server did not become ready after 60s';
         exit 1;
     depends_on:
-      - ollama_server
+      ollama_server:
+        condition: service_healthy
     restart: "no"
 
   open_webui:
