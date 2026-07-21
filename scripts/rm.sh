@@ -19,4 +19,8 @@ if [ -z "$MODEL_ID" ]; then
 fi
 
 echo "Removing model: $MODEL_ID ..."
-docker exec -it ollama_server ollama rm "$MODEL_ID"
+if [ -t 1 ]; then
+    docker exec -it ollama_server ollama rm "$MODEL_ID"
+else
+    docker exec ollama_server ollama rm "$MODEL_ID"
+fi

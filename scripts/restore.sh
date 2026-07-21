@@ -18,17 +18,14 @@ fi
 
 echo "Restoring volumes from $BACKUP_FILE ..."
 
-TMPDIR=$(mktemp -d)
-tar xzf "$BACKUP_FILE" -C "$TMPDIR"
-
-if [ -d "$TMPDIR/ollama_storage" ]; then
-    docker run --rm -v ollama_storage:/data -v "$TMPDIR":/backup alpine sh -c "rm -rf /data/* && cp -a /backup/ollama_storage/. /data/"
-fi
-
-if [ -d "$TMPDIR/open_webui_data" ]; then
-    docker run --rm -v open_webui_data:/data -v "$TMPDIR":/backup alpine sh -c "rm -rf /data/* && cp -a /backup/open_webui_data/. /data/"
-fi
-
-rm -rf "$TMPDIR"
+# Extract directly into volumes using tar (handles symlinks correctly)
+docker run --rm \
+    -v ollama_storage:/ollama_storage \
+    -v open_webui_data:/open_webui_data \
+    -v "$(pwd)":/backup:ro \
+    alpine sh -c "
+        rm -rf /ollama_storage/* /open_webui_data/* 2>/dev/null;
+        tar xzf /backup/$BACKUP_FILE -C /;
+    "
 
 echo "Done. Restart with: task boot"
