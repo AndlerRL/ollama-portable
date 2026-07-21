@@ -8,8 +8,6 @@ tasks:
     desc: Start ollama_server and pull a model
     cmds:
       - bash scripts/init.sh {{.CLI_ARGS}}
-      - echo "Waiting 5s for ollama_server to start ..."
-      - sleep 5
 
   reboot:
     desc: Tear down and boot fresh

@@ -54,4 +54,28 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/detect.sh"
 
 cd "$PROJECT_ROOT"
-MODEL=$SELECTED_MODEL docker compose $COMPOSE_FILES up -d
+
+# Step 1: Start ollama_server (no puller service)
+echo "Starting ollama_server..."
+docker compose $COMPOSE_FILES up -d ollama_server
+
+# Step 2: Wait for server to be ready
+echo "Waiting for ollama_server to be ready..."
+for i in $(seq 1 60); do
+    if docker exec ollama_server ollama list >/dev/null 2>&1; then
+        echo "Server ready."
+        break
+    fi
+    if [ "$i" -eq 60 ]; then
+        echo "ERROR: ollama_server did not become ready after 180s"
+        exit 1
+    fi
+    sleep 3
+done
+
+# Step 3: Pull the model
+echo "Pulling model: $SELECTED_MODEL ..."
+docker exec ollama_server ollama pull "$SELECTED_MODEL"
+
+echo ""
+echo "Boot complete. Server running on http://localhost:${OLLAMA_HOST_PORT:-11434}"
