@@ -13,6 +13,7 @@ tasks:
           echo "Found pre-down backup. Restoring..."
           bash scripts/restore.sh ollama_backup_pre-down.tar.gz
         fi
+      - task webui
 
   reboot:
     desc: Tear down and boot fresh (preserves data)
