@@ -18,12 +18,12 @@ tasks:
   up:
     desc: Start all services (ollama_server + optional webui)
     cmds:
-      - bash scripts/compose.sh up -d --build
+      - bash scripts/compose.sh up -d
 
   webui:
     desc: Start ollama_server with Open WebUI
     cmds:
-      - bash scripts/compose.sh --profile webui up -d --build
+      - bash scripts/compose.sh --profile webui up -d
 
   down:
     desc: Tear down everything (removes volumes)
@@ -40,7 +40,7 @@ tasks:
     cmds:
       - task down
       - sleep 5
-      - bash scripts/compose.sh --profile webui up -d --build
+      - bash scripts/compose.sh --profile webui up -d
 
   pull:
     desc: Pull a model into the running container
