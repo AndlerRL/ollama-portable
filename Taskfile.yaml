@@ -8,12 +8,23 @@ tasks:
     desc: Start ollama_server and pull a model
     cmds:
       - bash scripts/init.sh {{.CLI_ARGS}}
+      - |
+        if [ -f ollama_backup_pre-down.tar.gz ]; then
+          echo "Found pre-down backup. Restoring..."
+          bash scripts/restore.sh ollama_backup_pre-down.tar.gz
+        fi
 
   reboot:
-    desc: Tear down and boot fresh
+    desc: Tear down and boot fresh (preserves data)
     cmds:
+      - bash scripts/backup.sh --tag pre-reboot
       - task down
       - task boot
+      - |
+        if [ -f ollama_backup_pre-reboot.tar.gz ]; then
+          echo "Restoring data from pre-reboot backup..."
+          bash scripts/restore.sh ollama_backup_pre-reboot.tar.gz
+        fi
 
   up:
     desc: Start all services (ollama_server + optional webui)
@@ -26,8 +37,9 @@ tasks:
       - bash scripts/compose.sh --profile webui up -d
 
   down:
-    desc: Tear down everything (removes volumes)
+    desc: Tear down everything (auto-backups before removing volumes)
     cmds:
+      - bash scripts/backup.sh --tag pre-down
       - bash scripts/compose.sh --profile webui down -v --remove-orphans
 
   stop:
@@ -36,11 +48,17 @@ tasks:
       - bash scripts/compose.sh --profile webui stop
 
   reload:
-    desc: Tear down and restart all services
+    desc: Tear down and restart all services (preserves data)
     cmds:
+      - bash scripts/backup.sh --tag pre-reload
       - task down
       - sleep 5
       - bash scripts/compose.sh --profile webui up -d
+      - |
+        if [ -f ollama_backup_pre-reload.tar.gz ]; then
+          echo "Restoring data from pre-reload backup..."
+          bash scripts/restore.sh ollama_backup_pre-reload.tar.gz
+        fi
 
   pull:
     desc: Pull a model into the running container

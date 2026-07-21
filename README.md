@@ -23,6 +23,16 @@ That's it. The server is running on `http://localhost:11434`.
 - [Docker](https://docs.docker.com/get-docker/) (Docker Desktop or Engine)
 - [Task](https://taskfile.dev/installation/) (`brew install go-task` on macOS)
 
+## Cloud Models (Optional)
+
+To use Ollama cloud models (GPT-4, Claude, etc.), authenticate inside the container:
+
+```bash
+docker exec -it ollama_server ollama login
+```
+
+Follow the prompts to authenticate with your Ollama account. Cloud models will then appear in the WebUI model selector.
+
 ## Commands
 
 | Command | Description |
@@ -78,6 +88,18 @@ task detect
 
 All `docker compose` commands in the Taskfile route through `scripts/compose.sh`, which sources `detect.sh` to pick the right override files. No manual configuration needed.
 
+## Resource Limits
+
+| Hardware | Recommended models | Notes |
+|---|---|---|
+| CPU-only, <16GB RAM | `qwen2.5:0.5b`, `llama3.2:1b` | Expect 3-10 tokens/second |
+| CPU-only, 16GB+ RAM | `qwen2.5:1.5b`, `deepseek-r1:1.5b` | Expect 2-5 tokens/second |
+| Apple Silicon (M1+) | Any up to 7B | Metal acceleration built-in |
+| NVIDIA GPU (4GB+) | Any up to 7B | CUDA acceleration |
+| AMD GPU (4GB+) | Any up to 7B | ROCm acceleration |
+
+Models stay loaded in RAM indefinitely (`OLLAMA_KEEP_ALIVE=-1`). On CPU-only machines, the first request after boot will be slow as the model loads. Subsequent requests are faster.
+
 ## Monitoring
 
 Track CPU, memory, and session history for every inference call:
@@ -100,6 +122,28 @@ Session data is stored in `~/.ollama-portable/sessions/`. Each session records C
 
 For bare-metal Ollama users, check out **[dst0/watch-ollama](https://github.com/dst0/watch-ollama)** — a Python-based TUI with GPU monitoring and systemd integration.
 
+## Data Persistence
+
+`task down` removes Docker volumes — **all models, chats, and settings are lost**. To prevent this, destructive commands auto-backup before running:
+
+| Command | Auto-backup tag | Auto-restore |
+|---|---|---|
+| `task down` | `pre-down` | — |
+| `task reboot` | `pre-reboot` | Yes (on next boot) |
+| `task reload` | `pre-reload` | Yes (immediately) |
+
+Manual backup/restore:
+
+```bash
+# Named backup
+task backup -- --tag my-setup
+
+# Restore from backup
+task restore -- ollama_backup_my-setup.tar.gz
+```
+
+Backups include both volumes: `ollama_storage` (models) and `open_webui_data` (chats, settings).
+
 ## Configuration
 
 Copy `.env.example` to `.env` and customize:
@@ -113,20 +157,29 @@ WEBUI_HOST_PORT=3000      # Host port for Open WebUI
 
 ```
 ollama-portable/
-├── .env.example           # Configuration template
-├── docker-compose.yml     # ollama_server + open_webui (opt-in)
-├── Taskfile.yaml          # All commands
+├── .env.example              # Configuration template
+├── docker-compose.yml        # CPU-only base (ollama_server + open_webui)
+├── docker-compose.gpu-nvidia.yml  # NVIDIA GPU override
+├── docker-compose.gpu-amd.yml     # AMD GPU override
+├── Dockerfile.webui          # Pre-cached embedding model
+├── Taskfile.yaml             # 17 tasks
+├── LICENSE
 └── scripts/
-    ├── init.sh            # Boot with model selection
-    ├── pull.sh            # Pull any model
-    ├── list.sh            # List pulled models
-    ├── rm.sh              # Remove a model
-    ├── run.sh             # Interactive chat
-    ├── show.sh            # Model details
-    ├── status.sh          # Health check
-    ├── logs.sh            # Tail server logs
-    ├── backup.sh          # Backup volume
-    └── restore.sh         # Restore volume
+    ├── init.sh               # Boot with model selection
+    ├── pull.sh               # Pull any model
+    ├── list.sh               # List pulled models
+    ├── rm.sh                 # Remove a model
+    ├── run.sh                # Interactive chat
+    ├── show.sh               # Model details
+    ├── status.sh             # Health check
+    ├── logs.sh               # Tail server logs
+    ├── backup.sh             # Backup both volumes
+    ├── restore.sh            # Restore both volumes
+    ├── detect.sh             # Hardware detection
+    ├── compose.sh            # Detection-aware compose wrapper
+    ├── record.sh             # Session recorder daemon
+    ├── watch.sh              # Live TUI dashboard
+    └── sessions.sh           # History + peak analysis
 ```
 
 ## Related
