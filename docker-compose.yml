@@ -9,6 +9,7 @@ services:
     restart: always
     environment:
       - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_KEEP_ALIVE=-1
     healthcheck:
       test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
       interval: 5s
@@ -29,7 +30,8 @@ services:
       - OLLAMA_BASE_URL=http://ollama_server:11434
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
     depends_on:
-      - ollama_server
+      ollama_server:
+        condition: service_healthy
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/config || exit 1"]
