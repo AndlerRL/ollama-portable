@@ -1,0 +1,5 @@
+# Pre-download the embedding model at build time to avoid first-start download delay
+# and prevent disk space issues in read-only or resource-constrained runtime environments.
+FROM ghcr.io/open-webui/open-webui:main
+
+RUN python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"

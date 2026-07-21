@@ -17,9 +17,10 @@ services:
       start_period: 15s
 
   open_webui:
-    image: ghcr.io/open-webui/open-webui:main
+    build:
+      context: .
+      dockerfile: Dockerfile.webui
     container_name: open_webui
-    pull_policy: missing
     ports:
       - "${WEBUI_HOST_PORT:-3000}:8080"
     volumes:

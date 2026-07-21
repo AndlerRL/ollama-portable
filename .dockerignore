@@ -1,0 +1,11 @@
+.env
+.env.example
+.git/
+.gitignore
+ollama_backup_*.tar.gz
+scripts/
+Taskfile.yaml
+LICENSE
+README.md
+docker-compose*.yml
+*.md
