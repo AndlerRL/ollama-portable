@@ -30,6 +30,12 @@ services:
     depends_on:
       - ollama_server
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/config || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     profiles:
       - webui
 
