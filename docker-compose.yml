@@ -12,7 +12,7 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
       interval: 5s
       timeout: 10s
       retries: 20
@@ -29,7 +29,7 @@ services:
       - |
         echo 'Waiting for ollama_server to be ready...';
         for i in $$(seq 1 60); do
-          if curl -sf http://ollama_server:11434/api/tags >/dev/null 2>&1; then
+          if OLLAMA_HOST=ollama_server:11434 ollama list >/dev/null 2>&1; then
             echo 'Server ready. Pulling model...';
             OLLAMA_HOST=ollama_server:11434 ollama pull $${MODEL:-qwen2.5:1.5b} && exit 0 || exit 1;
           fi;
