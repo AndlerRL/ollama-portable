@@ -19,6 +19,7 @@ services:
   open_webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open_webui
+    pull_policy: missing
     ports:
       - "${WEBUI_HOST_PORT:-3000}:8080"
     volumes:
