@@ -109,7 +109,8 @@ parse_live_json() {
 # ── Render ─────────────────────────────────────────────────────────
 
 render() {
-	clear
+	# Cursor home + clear to end of display (no flicker, no scroll)
+	printf '\033[H\033[J'
 
 	local now
 	now=$(date '+%Y-%m-%d %H:%M:%S')
@@ -127,7 +128,7 @@ render() {
 	stats=$(fetch_container_stats)
 
 	if [[ -z "$stats" ]]; then
-		echo "  ${RED}Container not running.${RESET}"
+		echo -e "  ${RED}Container not running.${RESET}"
 	else
 		local cpu_pct mem_usage net_io
 		cpu_pct=$(echo "$stats" | cut -d',' -f1 | sed 's/%//')
@@ -149,19 +150,33 @@ render() {
 
 		# NET + UPTIME
 		local rx tx
-		rx=$(echo "$net_io" | awk '{print $1 $2}')
-		tx=$(echo "$net_io" | awk '{print $4 $5}')
+		rx=$(echo "$net_io" | awk '{print $1}')
+		tx=$(echo "$net_io" | awk '{print $3}')
 
 		local uptime_str
-		uptime_str=$(docker inspect ollama_server --format '{{.State.StartedAt}}' 2>/dev/null | xargs -I{} date -j -f '%Y-%m-%dT%H:%M:%S' "{}" '+%s' 2>/dev/null)
-		if [[ -n "$uptime_str" ]]; then
-			local now_epoch diff
-			now_epoch=$(date '+%s')
-			diff=$(( now_epoch - uptime_str ))
-			local h m
-			h=$(( diff / 3600 ))
-			m=$(( (diff % 3600) / 60 ))
-			uptime_str="${h}h ${m}m"
+		# Docker's StartedAt includes nanoseconds: 2026-07-21T20:13:12.123456789Z
+		# Strip nanos and Z for cross-platform date parsing
+		local started_raw
+		started_raw=$(docker inspect ollama_server --format '{{.State.StartedAt}}' 2>/dev/null | sed 's/\.[0-9]*Z$/Z/' | sed 's/Z$//')
+		if [[ -n "$started_raw" ]]; then
+			local started_epoch now_epoch diff
+			if date --version >/dev/null 2>&1; then
+				# GNU date (Linux)
+				started_epoch=$(date -d "$started_raw" '+%s' 2>/dev/null)
+			else
+				# BSD date (macOS) — -u treats input as UTC
+				started_epoch=$(date -u -j -f '%Y-%m-%dT%H:%M:%S' "$started_raw" '+%s' 2>/dev/null)
+			fi
+			if [[ -n "$started_epoch" ]]; then
+				now_epoch=$(date '+%s')
+				diff=$(( now_epoch - started_epoch ))
+				local h m
+				h=$(( diff / 3600 ))
+				m=$(( (diff % 3600) / 60 ))
+				uptime_str="${h}h ${m}m"
+			else
+				uptime_str="?"
+			fi
 		else
 			uptime_str="?"
 		fi
@@ -178,7 +193,7 @@ render() {
 	models=$(fetch_active_models)
 
 	if [[ -z "$models" ]]; then
-		echo "  ${DIM}(none loaded)${RESET}"
+		echo -e "  ${DIM}(none loaded)${RESET}"
 	else
 		while IFS= read -r line; do
 			[[ -z "$line" ]] && continue
@@ -200,7 +215,7 @@ render() {
 	live_data=$(parse_live_json 2>/dev/null)
 
 	if [[ -z "$live_data" ]]; then
-		echo "  ${DIM}No active session. Run 'task record' to start recording.${RESET}"
+		echo -e "  ${DIM}No active session. Run 'task record' to start recording.${RESET}"
 	else
 		local l_model l_elapsed l_cpu l_cpu_peak l_mem l_mem_peak l_snapshots
 		{
@@ -228,7 +243,7 @@ render() {
 	logs=$(fetch_recent_logs)
 
 	if [[ -z "$logs" ]]; then
-		echo "  ${DIM}(no logs)${RESET}"
+		echo -e "  ${DIM}(no logs)${RESET}"
 	else
 		while IFS= read -r log_line; do
 			[[ -z "$log_line" ]] && continue
@@ -315,23 +330,17 @@ while true; do
 	render
 
 	# Non-blocking key read loop for ~2 seconds
-	local start_time
-	start_time=$(date +%s%N 2>/dev/null || date +%s)
-	local elapsed=0
+	start_time=$(date +%s)
+	elapsed=0
 
 	while true; do
 		if read_key; then
 			handle_key
 		fi
 
-		# Check elapsed time
-		local now_time
-		now_time=$(date +%s%N 2>/dev/null || date +%s)
-		if [[ "$start_time" == *N* ]]; then
-			elapsed=$(( (now_time - start_time) / 1000000000 ))
-		else
-			elapsed=$(( now_time - start_time ))
-		fi
+		# Check elapsed time (cross-platform, seconds only)
+		now_time=$(date +%s)
+		elapsed=$(( now_time - start_time ))
 
 		(( elapsed >= 2 )) && break
 	done
