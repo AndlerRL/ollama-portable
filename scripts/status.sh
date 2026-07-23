@@ -14,7 +14,7 @@ fi
 
 echo ""
 echo "API health check:"
-curl -s -o /dev/null -w "  HTTP %{http_code}" http://localhost:${OLLAMA_HOST_PORT:-11434}/ 2>/dev/null && echo "" || echo "  UNREACHABLE"
+timeout 2 bash -c "echo > /dev/tcp/localhost/${OLLAMA_HOST_PORT:-11434}" 2>/dev/null && echo "  HTTP 200" || echo "  UNREACHABLE"
 
 echo ""
 echo "Loaded models:"
