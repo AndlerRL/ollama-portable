@@ -56,7 +56,10 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project team responsible for enforcement by contacting the project maintainers directly or opening a private security/enforcement report. All complaints will be
+reported by opening a **[private security report](https://github.com/AndlerRL/ollama-portable/security/advisories/new)**,
+which provides a confidential, encrypted reporting channel built into GitHub.
+You may also contact the maintainer directly via the email address listed on their
+[GitHub profile](https://github.com/AndlerRL). All complaints will be
 reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
