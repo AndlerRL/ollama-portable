@@ -1,0 +1,9 @@
+services:
+  ollama_server:
+    profiles:
+      - never-start-on-apple-silicon
+
+  open_webui:
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on: !reset null

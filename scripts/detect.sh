@@ -97,7 +97,7 @@ detect_gpu() {
         cpu_brand=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || true)
         if echo "$cpu_brand" | grep -qi "Apple"; then
             gpu_type="apple"
-            compose_files="-f docker-compose.yml"
+            compose_files="-f docker-compose.yml -f docker-compose.apple.yml"
         fi
     fi
 
@@ -163,6 +163,27 @@ main() {
         echo "  CPU:       $cpu_model"
         echo "  Cores:     $cpu_cores"
         echo "  RAM:       $ram_total"
+
+        if [ "$gpu_type" = "apple" ]; then
+            echo ""
+            echo "------------------------------------------------------------"
+            echo "Apple Silicon notice"
+            echo "------------------------------------------------------------"
+            echo "Docker Desktop on macOS cannot pass the Apple GPU to Linux"
+            echo "containers, and Ollama has no Linux Metal backend. The"
+            echo "containerized Ollama will run on CPU only."
+            echo ""
+            echo "For GPU (Metal) acceleration, run:"
+            echo "  task native"
+            echo "This starts a native 'ollama serve' on the Mac (Metal) and"
+            echo "points the containerized Open WebUI at it via"
+            echo "host.docker.internal:11434."
+            echo ""
+            echo "Prerequisite: install native Ollama first:"
+            echo "  brew install ollama"
+            echo "  # or: curl -fsSL https://ollama.com/install.sh | sh"
+            echo "------------------------------------------------------------"
+        fi
     else
         cat <<EOF
 COMPOSE_FILES="$compose_files"
