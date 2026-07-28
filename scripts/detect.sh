@@ -92,12 +92,19 @@ detect_gpu() {
     fi
 
     # 3. Apple Silicon (only if no discrete GPU found)
+    # NOTE: Apple override is NOT included by default. Docker Desktop on macOS
+    # cannot pass the Apple GPU to Linux containers, and Ollama has no Linux
+    # Metal backend. The containerized Ollama runs on CPU only.
+    # The apple override is applied only by `task native` (Taskfile.yaml),
+    # which starts a native Metal-accelerated Ollama on the host and points
+    # the containerized Open WebUI at it via host.docker.internal:11434.
     if [ "$gpu_type" = "none" ]; then
         local cpu_brand
         cpu_brand=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || true)
         if echo "$cpu_brand" | grep -qi "Apple"; then
             gpu_type="apple"
-            compose_files="-f docker-compose.yml -f docker-compose.apple.yml"
+            # CPU-only compose by default — no apple override
+            compose_files="-f docker-compose.yml"
         fi
     fi
 
@@ -151,7 +158,7 @@ main() {
         case "$gpu_type" in
             nvidia) echo "Detected: NVIDIA GPU" ;;
             amd)    echo "Detected: AMD GPU" ;;
-            apple)  echo "Detected: Apple Silicon (Metal)" ;;
+            apple)  echo "Detected: Apple Silicon (Docker CPU-only, native Metal via task native)" ;;
             none)   echo "Detected: CPU-only (no supported GPU)" ;;
         esac
 
