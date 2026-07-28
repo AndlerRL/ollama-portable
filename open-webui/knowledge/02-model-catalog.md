@@ -8,7 +8,7 @@ Recommended Ollama models by hardware tier and use case. Use this catalog with t
 | --- | --- | --- |
 | CPU-only, <16GB RAM | `qwen2.5:0.5b`, `llama3.2:1b` | Expect 3-10 tokens/second |
 | CPU-only, 16GB+ RAM | `qwen2.5:1.5b`, `deepseek-r1:1.5b` | Expect 2-5 tokens/second |
-| Apple Silicon (M1+) | Any up to 7B | Metal acceleration built-in |
+| Apple Silicon (M1+) | Any up to 7B | Docker: CPU-only; native Metal via `task native` |
 | NVIDIA GPU (4GB+) | Any up to 7B | CUDA acceleration |
 | AMD GPU (4GB+) | Any up to 7B | ROCm acceleration |
 
