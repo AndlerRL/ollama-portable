@@ -47,7 +47,7 @@ Knowledge bases require **two manual fields** (Name + Description) and then a fi
 
 ### Create each KB
 
-1. Open Open WebUI at `http://localhost:3000`.
+1. Open Open WebUI at `http://localhost:${WEBUI_HOST_PORT:-3000}`.
 2. Go to **Workspace > Knowledge**.
 3. Click **+ New Knowledge**.
 4. Enter the **Name** and **Description** from [`knowledge/00-knowledge-bases-index.md`](knowledge/00-knowledge-bases-index.md).
@@ -90,7 +90,7 @@ Skills are imported one at a time via `POST /api/v1/skills/create` (there is no 
 ```bash
 # Get your API key from Settings > Account in Open WebUI
 API_KEY="your-open-webui-api-key"
-WEBUI_URL="http://localhost:3000"
+WEBUI_URL="http://localhost:${WEBUI_HOST_PORT:-3000}"
 
 python3 -c "
 import json, urllib.request
@@ -157,7 +157,7 @@ Tools are Python scripts imported via `POST /api/v1/tools/create` (no bulk endpo
 
 ```bash
 API_KEY="your-open-webui-api-key"
-WEBUI_URL="http://localhost:3000"
+WEBUI_URL="http://localhost:${WEBUI_HOST_PORT:-3000}"
 
 python3 -c "
 import json, urllib.request
@@ -212,7 +212,7 @@ Prompts are imported via `POST /api/v1/prompts/create` (no bulk endpoint). Each 
 
 ```bash
 API_KEY="your-open-webui-api-key"
-WEBUI_URL="http://localhost:3000"
+WEBUI_URL="http://localhost:${WEBUI_HOST_PORT:-3000}"
 
 python3 -c "
 import json, urllib.request
@@ -268,7 +268,7 @@ The workspace model is imported via the **UI file import** (Workspace > Models >
 
 ```bash
 API_KEY="your-open-webui-api-key"
-WEBUI_URL="http://localhost:3000"
+WEBUI_URL="http://localhost:${WEBUI_HOST_PORT:-3000}"
 
 # The UI format is a flat array; loop and call /create per model
 python3 -c "
