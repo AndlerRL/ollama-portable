@@ -40,6 +40,7 @@ Follow the prompts to authenticate with your Ollama account. Cloud models will t
 | `task boot` | Start server + pull a model (interactive menu or `--model`) |
 | `task up` | Start all services |
 | `task webui` | Start server with Open WebUI (ChatGPT-like interface on `:3000`) |
+| `task native` | Apple Silicon hybrid — native Ollama (Metal) + containerized Open WebUI |
 | `task down` | Tear down everything (removes volumes) |
 | `task stop` | Stop services (keeps volumes) |
 | `task reboot` | Tear down and boot fresh |
@@ -79,14 +80,16 @@ The project auto-detects your GPU and selects the right Docker Compose configura
 task detect
 ```
 
-| GPU | Detection | Compose files |
-|---|---|---|
-| NVIDIA | `nvidia-smi` found | `docker-compose.yml` + `docker-compose.gpu-nvidia.yml` |
-| AMD | `rocm-smi` or `amd-smi` found | `docker-compose.yml` + `docker-compose.gpu-amd.yml` |
-| Apple Silicon | `sysctl` reports Apple CPU | `docker-compose.yml` (Metal via Ollama built-in) |
-| CPU-only | None of the above | `docker-compose.yml` |
+| GPU | Detection | Compose files | GPU in Docker? |
+|---|---|---|---|
+| NVIDIA | `nvidia-smi` found | `docker-compose.yml` + `docker-compose.gpu-nvidia.yml` | Yes (CUDA passthrough) |
+| AMD | `rocm-smi` or `amd-smi` found | `docker-compose.yml` + `docker-compose.gpu-amd.yml` | Yes (ROCm passthrough) |
+| Apple Silicon | `sysctl` reports Apple CPU | `docker-compose.yml` + `docker-compose.apple.yml` | **No** — see [macOS / Apple Silicon](#macos--apple-silicon) |
+| CPU-only | None of the above | `docker-compose.yml` | No |
 
-All `docker compose` commands in the Taskfile route through `scripts/compose.sh`, which sources `detect.sh` to pick the right override files. No manual configuration needed.
+Standard `docker compose` commands in the Taskfile route through `scripts/compose.sh`, which sources `detect.sh` to pick the right override files. The `task native` command uses the apple override directly (not through `compose.sh`). No manual configuration needed.
+
+> **Apple Silicon users:** Docker Desktop on macOS cannot pass the Apple GPU to Linux containers, and Ollama has no Linux Metal backend — so the containerized Ollama runs on CPU only. For GPU (Metal) acceleration, run `task native` instead of `task webui`. See [macOS / Apple Silicon](#macos--apple-silicon) below.
 
 ## Resource Limits
 
@@ -94,11 +97,82 @@ All `docker compose` commands in the Taskfile route through `scripts/compose.sh`
 |---|---|---|
 | CPU-only, <16GB RAM | `qwen2.5:0.5b`, `llama3.2:1b` | Expect 3-10 tokens/second |
 | CPU-only, 16GB+ RAM | `qwen2.5:1.5b`, `deepseek-r1:1.5b` | Expect 2-5 tokens/second |
-| Apple Silicon (M1+) | Any up to 7B | Metal acceleration built-in |
+| Apple Silicon in Docker | Same as CPU-only | Docker cannot use the Apple GPU. Use `task native` for Metal. |
+| Apple Silicon native (`task native`) | Any up to 7B | Metal acceleration via native `ollama serve` |
 | NVIDIA GPU (4GB+) | Any up to 7B | CUDA acceleration |
 | AMD GPU (4GB+) | Any up to 7B | ROCm acceleration |
 
 Models stay loaded in RAM indefinitely (`OLLAMA_KEEP_ALIVE=-1`). On CPU-only machines, the first request after boot will be slow as the model loads. Subsequent requests are faster.
+
+## macOS / Apple Silicon
+
+Docker Desktop on macOS runs Linux containers inside a VM, and it **cannot pass the Apple GPU** (Metal) to that VM. Ollama's Linux build has no Metal backend — only CUDA (NVIDIA) and ROCm (AMD). So on Apple Silicon, the containerized Ollama falls back to CPU, regardless of how `detect.sh` or `docker-compose.yml` are configured. This is a platform limitation, not a template bug.
+
+`task detect` will tell you this proactively:
+
+```
+Detected: Apple Silicon (Metal)
+Compose files: docker-compose.yml + docker-compose.apple.yml
+------------------------------------------------------------
+Apple Silicon notice
+------------------------------------------------------------
+Docker Desktop on macOS cannot pass the Apple GPU to Linux
+containers, and Ollama has no Linux Metal backend. The
+containerized Ollama will run on CPU only.
+
+For GPU (Metal) acceleration, run:
+  task native
+...
+```
+
+### The hybrid path: `task native`
+
+`task native` keeps Open WebUI containerized (portable, one command) but runs the inference server natively on the Mac, where it gets full Metal acceleration:
+
+1. **Install native Ollama** (one-time):
+
+   ```bash
+   brew install ollama
+   # or: curl -fsSL https://ollama.com/install.sh | sh
+   ```
+
+2. **Run the hybrid stack:**
+
+   ```bash
+   task native
+   ```
+
+   This starts `ollama serve` natively on the Mac (Metal-accelerated, on `http://localhost:11434`) and brings up the Open WebUI container pointed at `http://host.docker.internal:11434` — the Mac's native Ollama, reachable from inside the container.
+
+3. **Pull models natively** (they live in `~/.ollama` on the Mac, not in the Docker volume):
+
+   ```bash
+   ollama pull llama3.2
+   # or via the WebUI's model picker
+   ```
+
+### What `docker-compose.apple.yml` does
+
+The override file is selected automatically by `detect.sh` on Apple Silicon. It:
+
+- Neutralizes the `ollama_server` service (so the containerized CPU-only Ollama never starts).
+- Repoints `open_webui` at `http://host.docker.internal:11434` (the Mac's native Ollama).
+- Drops the `depends_on` health-check gate (the native Ollama is not a compose service).
+
+### When to use which command
+
+| Command | Ollama runs | GPU | Best for |
+|---|---|---|---|
+| `task webui` | In Docker | None (CPU) on Apple Silicon; CUDA/ROCm on Linux+NVIDIA/AMD | Linux/Windows hosts with a discrete GPU |
+| `task native` | Natively on the Mac | Metal | Apple Silicon Macs |
+| `task up` | In Docker | Same as `task webui` | Headless / no WebUI |
+
+### Notes
+
+- `host.docker.internal` resolves to the Mac host from inside Docker Desktop containers. On Linux it resolves to `host-gateway` if Docker is configured for it; the apple override is only selected on Apple Silicon, so this is not a concern.
+- Models pulled via `task pull` (the Docker path) are stored in the `ollama_storage` volume and are **not** shared with native Ollama. Models pulled via `ollama pull` (the native path) live in `~/.ollama` on the Mac. The two stores are separate; pick one path and stick with it.
+- `task down` removes Docker volumes but does not touch `~/.ollama`. Native Ollama models survive `task down`.
+- The `task native` background process writes its log to `/tmp/ollama-native.log` and its PID to `/tmp/ollama-native.pid`. Stop it with `kill $(cat /tmp/ollama-native.pid)` or `task native-stop` when you are done.
 
 ## Monitoring
 
@@ -161,8 +235,9 @@ ollama-portable/
 ├── docker-compose.yml        # CPU-only base (ollama_server + open_webui)
 ├── docker-compose.gpu-nvidia.yml  # NVIDIA GPU override
 ├── docker-compose.gpu-amd.yml     # AMD GPU override
+├── docker-compose.apple.yml       # Apple Silicon override (native Ollama + containerized WebUI)
 ├── Dockerfile.webui          # Pre-cached embedding model
-├── Taskfile.yaml             # 17 tasks
+├── Taskfile.yaml             # 18 tasks
 ├── LICENSE
 └── scripts/
     ├── init.sh               # Boot with model selection
@@ -175,7 +250,7 @@ ollama-portable/
     ├── logs.sh               # Tail server logs
     ├── backup.sh             # Backup both volumes
     ├── restore.sh            # Restore both volumes
-    ├── detect.sh             # Hardware detection
+    ├── detect.sh             # Hardware detection (prints Apple Silicon notice)
     ├── compose.sh            # Detection-aware compose wrapper
     ├── record.sh             # Session recorder daemon
     ├── watch.sh              # Live TUI dashboard

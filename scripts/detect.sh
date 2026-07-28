@@ -92,11 +92,18 @@ detect_gpu() {
     fi
 
     # 3. Apple Silicon (only if no discrete GPU found)
+    # NOTE: Apple override is NOT included by default. Docker Desktop on macOS
+    # cannot pass the Apple GPU to Linux containers, and Ollama has no Linux
+    # Metal backend. The containerized Ollama runs on CPU only.
+    # The apple override is applied only by `task native` (Taskfile.yaml),
+    # which starts a native Metal-accelerated Ollama on the host and points
+    # the containerized Open WebUI at it via host.docker.internal:11434.
     if [ "$gpu_type" = "none" ]; then
         local cpu_brand
         cpu_brand=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || true)
         if echo "$cpu_brand" | grep -qi "Apple"; then
             gpu_type="apple"
+            # CPU-only compose by default — no apple override
             compose_files="-f docker-compose.yml"
         fi
     fi
@@ -151,7 +158,7 @@ main() {
         case "$gpu_type" in
             nvidia) echo "Detected: NVIDIA GPU" ;;
             amd)    echo "Detected: AMD GPU" ;;
-            apple)  echo "Detected: Apple Silicon (Metal)" ;;
+            apple)  echo "Detected: Apple Silicon (Docker CPU-only, native Metal via task native)" ;;
             none)   echo "Detected: CPU-only (no supported GPU)" ;;
         esac
 
@@ -163,6 +170,27 @@ main() {
         echo "  CPU:       $cpu_model"
         echo "  Cores:     $cpu_cores"
         echo "  RAM:       $ram_total"
+
+        if [ "$gpu_type" = "apple" ]; then
+            echo ""
+            echo "------------------------------------------------------------"
+            echo "Apple Silicon notice"
+            echo "------------------------------------------------------------"
+            echo "Docker Desktop on macOS cannot pass the Apple GPU to Linux"
+            echo "containers, and Ollama has no Linux Metal backend. The"
+            echo "containerized Ollama will run on CPU only."
+            echo ""
+            echo "For GPU (Metal) acceleration, run:"
+            echo "  task native"
+            echo "This starts a native 'ollama serve' on the Mac (Metal) and"
+            echo "points the containerized Open WebUI at it via"
+            echo "host.docker.internal:11434."
+            echo ""
+            echo "Prerequisite: install native Ollama first:"
+            echo "  brew install ollama"
+            echo "  # or: curl -fsSL https://ollama.com/install.sh | sh"
+            echo "------------------------------------------------------------"
+        fi
     else
         cat <<EOF
 COMPOSE_FILES="$compose_files"

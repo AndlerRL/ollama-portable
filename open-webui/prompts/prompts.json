@@ -1,0 +1,52 @@
+[
+  {
+    "command": "recommend",
+    "name": "Recommend a Model",
+    "content": "Recommend an Ollama model for this host.\n\nAvailable RAM: {{ram_gb | number:min=1:max=128:placeholder=\"16\":required}}\nUse case: {{use_case | select:options=[\"General\",\"Coding\",\"Reasoning\",\"Vision\",\"Small / fastest\"]:default=\"General\":required}}\nGPU: {{gpu | select:options=[\"NVIDIA\",\"AMD\",\"Apple Silicon\",\"CPU-only\",\"Not sure\"]:default=\"Not sure\"}}\n\nUse the `ollama_hardware_detect` tool if the GPU is \"Not sure\", then call `ollama_recommend_model` with the RAM and use case. Present the top 3 options with expected tokens/second and the pull command for each. End with a one-line recommendation of the best fit.",
+    "data": {},
+    "meta": {
+      "description": "Recommend an Ollama model based on available RAM, use case, and GPU. Calls the hardware-detect and recommend tools."
+    },
+    "tags": ["ollama", "models", "recommend"]
+  },
+  {
+    "command": "healthcheck",
+    "name": "Server Health Check",
+    "content": "Run a full health check on the Ollama server.\n\nDetail level: {{detail | select:options=[\"Summary\",\"Full\"]:default=\"Summary\":required}}\n\nCall `ollama_server_status` to check API reachability and list loaded (in-memory) models. Then call `ollama_list_models` to count pulled models. Report:\n1. API status (reachable / unreachable)\n2. Number of pulled models\n3. Number of loaded models (with names and sizes)\n4. Any concerns (e.g. no models pulled, server unreachable, memory pressure)\n\nIf the detail level is \"Full\", also call `ollama_hardware_detect` and include the GPU type and recommended compose configuration.",
+    "data": {},
+    "meta": {
+      "description": "Full Ollama server health check: API status, pulled models, loaded models, and optional hardware detail."
+    },
+    "tags": ["ollama", "health", "status"]
+  },
+  {
+    "command": "pull",
+    "name": "Pull a Model",
+    "content": "Pull a model into the Ollama server.\n\nModel name: {{model_name | text:placeholder=\"e.g. llama3.2:1b\":required}}\nConfirm I understand pulls can be large: {{confirm | checkbox:label=\"I understand the download size\":required}}\n\nBefore pulling, call `ollama_list_models` to check if the model is already pulled. If it is, report that and stop. If not, warn the user about the approximate size (small models ~1-2GB, 7B models ~4-5GB, larger models 10GB+), then call `ollama_pull_model` with the model name. Report the result with the model name and status.",
+    "data": {},
+    "meta": {
+      "description": "Pull a model into Ollama with a size warning and duplicate check."
+    },
+    "tags": ["ollama", "pull", "models"]
+  },
+  {
+    "command": "cleanup",
+    "name": "Clean Up Models",
+    "content": "Help clean up Ollama models to free disk space.\n\nAction: {{action | select:options=[\"List only\",\"Remove a specific model\",\"Remove all unused\"]:default=\"List only\":required}}\nModel to remove (if applicable): {{model_name | text:placeholder=\"e.g. qwen2.5:0.5b\"}}\n\nCall `ollama_list_models` to show all pulled models with sizes. If the action is \"Remove a specific model\", ask the user to confirm the exact model name, then call `ollama_delete_model` with `confirm=True` only after explicit confirmation in the chat. If the action is \"Remove all unused\", list the models and ask which ones to remove one by one. Never delete without explicit per-model confirmation.",
+    "data": {},
+    "meta": {
+      "description": "List pulled models and remove specific ones with explicit confirmation. Never bulk-deletes without per-model confirmation."
+    },
+    "tags": ["ollama", "cleanup", "disk-space"]
+  },
+  {
+    "command": "telemetry",
+    "name": "Telemetry Summary",
+    "content": "Summarize the Ollama session telemetry.\n\nFocus: {{focus | select:options=[\"Latest session\",\"Per-model aggregates\",\"Peak resource usage\",\"All\"]:default=\"Latest session\":required}}\n\nLoad the `telemetry-reader` skill via `view_skill` to get the interpretation framework. Then explain what the user should look for based on their focus choice, and tell them which `task` command to run (`task sessions`, `task watch`, or `task sessions -- <session_id>`). Do not fabricate telemetry numbers — if you do not have the data, say so and point to the command that produces it.",
+    "data": {},
+    "meta": {
+      "description": "Summarize session telemetry by loading the telemetry-reader skill and pointing to the right task command."
+    },
+    "tags": ["telemetry", "sessions", "performance"]
+  }
+]
