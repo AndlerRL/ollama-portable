@@ -50,6 +50,7 @@ tasks:
         if ! curl -sf http://localhost:11434/api/version >/dev/null 2>&1; then
           echo "Starting native Ollama (Metal)..."
           ollama serve > /tmp/ollama-native.log 2>&1 &
+          echo $! > /tmp/ollama-native.pid
           echo "Waiting for native Ollama to come up..."
           for i in $(seq 1 30); do
             if curl -sf http://localhost:11434/api/version >/dev/null 2>&1; then
@@ -65,12 +66,31 @@ tasks:
         else
           echo "Native Ollama already running on http://localhost:11434"
         fi
+        # Verify reachability from Docker host path
+        if ! curl -sf http://host.docker.internal:11434/api/version >/dev/null 2>&1; then
+          echo "Warning: Ollama not reachable via host.docker.internal:11434."
+          echo "Open WebUI may not connect. Check Docker Desktop DNS settings."
+        fi
         echo "Starting Open WebUI (points at host.docker.internal:11434)..."
         docker compose -f docker-compose.yml -f docker-compose.apple.yml --profile webui up -d
         echo ""
         echo "Open WebUI: http://localhost:{{.WEBUI_HOST_PORT | default 3000}}"
         echo "Native Ollama: http://localhost:11434 (Metal-accelerated)"
         echo "Native Ollama logs: /tmp/ollama-native.log"
+        echo "Native Ollama PID: $(cat /tmp/ollama-native.pid 2>/dev/null || echo 'unknown')"
+
+  native-stop:
+    desc: Stop the native Ollama background process (Apple Silicon)
+    cmds:
+      - |
+        if [ -f /tmp/ollama-native.pid ]; then
+          PID=$(cat /tmp/ollama-native.pid)
+          echo "Stopping native Ollama (PID $PID)..."
+          kill "$PID" 2>/dev/null || echo "Process already stopped."
+          rm -f /tmp/ollama-native.pid
+        else
+          echo "No native Ollama PID file found. Try: pkill ollama"
+        fi
 
   down:
     desc: Tear down everything (auto-backups before removing volumes)

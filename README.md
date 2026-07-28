@@ -87,7 +87,7 @@ task detect
 | Apple Silicon | `sysctl` reports Apple CPU | `docker-compose.yml` + `docker-compose.apple.yml` | **No** — see [macOS / Apple Silicon](#macos--apple-silicon) |
 | CPU-only | None of the above | `docker-compose.yml` | No |
 
-All `docker compose` commands in the Taskfile route through `scripts/compose.sh`, which sources `detect.sh` to pick the right override files. No manual configuration needed.
+Standard `docker compose` commands in the Taskfile route through `scripts/compose.sh`, which sources `detect.sh` to pick the right override files. The `task native` command uses the apple override directly (not through `compose.sh`). No manual configuration needed.
 
 > **Apple Silicon users:** Docker Desktop on macOS cannot pass the Apple GPU to Linux containers, and Ollama has no Linux Metal backend — so the containerized Ollama runs on CPU only. For GPU (Metal) acceleration, run `task native` instead of `task webui`. See [macOS / Apple Silicon](#macos--apple-silicon) below.
 
@@ -172,7 +172,7 @@ The override file is selected automatically by `detect.sh` on Apple Silicon. It:
 - `host.docker.internal` resolves to the Mac host from inside Docker Desktop containers. On Linux it resolves to `host-gateway` if Docker is configured for it; the apple override is only selected on Apple Silicon, so this is not a concern.
 - Models pulled via `task pull` (the Docker path) are stored in the `ollama_storage` volume and are **not** shared with native Ollama. Models pulled via `ollama pull` (the native path) live in `~/.ollama` on the Mac. The two stores are separate; pick one path and stick with it.
 - `task down` removes Docker volumes but does not touch `~/.ollama`. Native Ollama models survive `task down`.
-- The `task native` background process writes its log to `/tmp/ollama-native.log`. Stop it with `pkill ollama` or `ollama stop` when you are done.
+- The `task native` background process writes its log to `/tmp/ollama-native.log` and its PID to `/tmp/ollama-native.pid`. Stop it with `kill $(cat /tmp/ollama-native.pid)` or `task native-stop` when you are done.
 
 ## Monitoring
 
