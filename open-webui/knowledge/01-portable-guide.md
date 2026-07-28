@@ -24,7 +24,7 @@ The template auto-detects the host GPU and picks the right Docker Compose config
 |---|---|---|
 | NVIDIA | `nvidia-smi` found | `docker-compose.yml` + `docker-compose.gpu-nvidia.yml` |
 | AMD | `rocm-smi` or `amd-smi` found | `docker-compose.yml` + `docker-compose.gpu-amd.yml` |
-| Apple Silicon | `sysctl` reports Apple CPU | `docker-compose.yml` (Metal via Ollama built-in) |
+| Apple Silicon | `sysctl` reports Apple CPU | `docker-compose.yml` (Docker CPU-only; native Metal via `task native`) |
 | CPU-only | None of the above | `docker-compose.yml` |
 
 All `docker compose` commands route through `scripts/compose.sh`, which sources `scripts/detect.sh`. No manual configuration needed. Run `task detect` to see what was detected.
@@ -40,6 +40,7 @@ All `docker compose` commands route through `scripts/compose.sh`, which sources 
 | `task stop` | Stop services (keeps volumes) |
 | `task reboot` | Tear down and boot fresh |
 | `task reload` | Tear down and restart all services |
+| `task native` | Apple Silicon hybrid — native Ollama (Metal) + containerized Open WebUI |
 | `task pull -- -m <model>` | Pull a model into the running container |
 | `task list` | List all pulled models |
 | `task rm -- -m <model>` | Remove a model |
@@ -112,8 +113,9 @@ ollama-portable/
 ├── docker-compose.yml            # CPU-only base (ollama_server + open_webui)
 ├── docker-compose.gpu-nvidia.yml # NVIDIA GPU override
 ├── docker-compose.gpu-amd.yml    # AMD GPU override
+├── docker-compose.apple.yml # Apple Silicon override (neutralizes ollama_server, points WebUI at host.docker.internal)
 ├── Dockerfile.webui              # Pre-cached embedding model
-├── Taskfile.yaml                 # 17 tasks
+├── Taskfile.yaml                 # 18 tasks (including task native for Apple Silicon Metal)
 ├── LICENSE
 └── scripts/
     ├── init.sh                   # Boot with model selection
