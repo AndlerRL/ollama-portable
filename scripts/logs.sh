@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LINES=50
-FOLLOW=""
+FOLLOW="-f"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -19,6 +19,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --follow|-f)
             FOLLOW="-f"
+            shift
+            ;;
+        --no-follow)
+            FOLLOW=""
             shift
             ;;
         *)

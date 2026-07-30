@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BACKUP_FILE="$1"
@@ -16,16 +17,19 @@ if [ ! -f "$BACKUP_FILE" ]; then
     exit 1
 fi
 
+# Resolve relative paths to absolute so the mount + container path work correctly
+[[ "$BACKUP_FILE" != /* ]] && BACKUP_FILE="$PROJECT_ROOT/$BACKUP_FILE"
+
 echo "Restoring volumes from $BACKUP_FILE ..."
 
 # Extract directly into volumes using tar (handles symlinks correctly)
 docker run --rm \
     -v ollama_storage:/ollama_storage \
     -v open_webui_data:/open_webui_data \
-    -v "$(pwd)":/backup:ro \
+    -v "$PROJECT_ROOT":/backup:ro \
     alpine sh -c "
-        rm -rf /ollama_storage/* /open_webui_data/* 2>/dev/null;
-        tar xzf /backup/$BACKUP_FILE -C /;
+        rm -rf /ollama_storage/* /open_webui_data/*;
+        tar xzf /backup/$(basename "$BACKUP_FILE") -C /;
     "
 
 echo "Done. Restart with: task boot"

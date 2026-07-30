@@ -155,16 +155,17 @@ render() {
 
 		local uptime_str
 		# Docker's StartedAt includes nanoseconds: 2026-07-21T20:13:12.123456789Z
-		# Strip nanos and Z for cross-platform date parsing
+		# Strip nanoseconds for cross-platform date parsing (keep Z for GNU date UTC handling)
 		local started_raw
-		started_raw=$(docker inspect ollama_server --format '{{.State.StartedAt}}' 2>/dev/null | sed 's/\.[0-9]*Z$/Z/' | sed 's/Z$//')
+		started_raw=$(docker inspect ollama_server --format '{{.State.StartedAt}}' 2>/dev/null | sed 's/\.[0-9]*Z$/Z/')
 		if [[ -n "$started_raw" ]]; then
 			local started_epoch now_epoch diff
 			if date --version >/dev/null 2>&1; then
-				# GNU date (Linux)
+				# GNU date (Linux) — keep Z so date interprets as UTC
 				started_epoch=$(date -d "$started_raw" '+%s' 2>/dev/null)
 			else
-				# BSD date (macOS) — -u treats input as UTC
+				# BSD date (macOS) — strip Z and use -u to treat input as UTC
+				started_raw="${started_raw%Z}"
 				started_epoch=$(date -u -j -f '%Y-%m-%dT%H:%M:%S' "$started_raw" '+%s' 2>/dev/null)
 			fi
 			if [[ -n "$started_epoch" ]]; then
