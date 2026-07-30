@@ -18,4 +18,8 @@ if [ -z "$MODEL_ID" ]; then
     fi
 fi
 
-docker exec -it ollama_server ollama show "$MODEL_ID"
+if [ -t 1 ]; then
+    docker exec -it ollama_server ollama show "$MODEL_ID"
+else
+    docker exec ollama_server ollama show "$MODEL_ID"
+fi

@@ -26,11 +26,12 @@ fi
 
 echo "Backing up volumes: ollama_storage, open_webui_data"
 
-TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+# Use tar directly inside alpine to handle symlinks correctly
+# (huggingface cache uses symlinks for blob storage)
+docker run --rm \
+  -v ollama_storage:/ollama_storage:ro \
+  -v open_webui_data:/open_webui_data:ro \
+  -v "$PROJECT_ROOT":/backup \
+  alpine tar czf "/backup/$BACKUP_FILE" -C / ollama_storage open_webui_data
 
-docker run --rm -v ollama_storage:/data:ro -v "$TMPDIR":/out alpine cp -a /data/. /out/ollama_storage/
-docker run --rm -v open_webui_data:/data:ro -v "$TMPDIR":/out alpine cp -a /data/. /out/open_webui_data/
-
-tar czf "$PROJECT_ROOT/$BACKUP_FILE" -C "$TMPDIR" .
 echo "Done: $PROJECT_ROOT/$BACKUP_FILE"
