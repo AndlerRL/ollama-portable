@@ -1,26 +1,4 @@
 use anyhow::Result;
-use serde::Deserialize;
-
-#[derive(Debug, Deserialize)]
-pub struct OllamaModel {
-    pub name: String,
-    pub model: String,
-    pub size: String,
-    pub digest: String,
-    pub details: ModelDetails,
-    pub expires_at: String,
-    pub size_vram: i64,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ModelDetails {
-    pub parent_model: String,
-    pub format: String,
-    pub family: String,
-    pub families: Vec<String>,
-    pub parameter_size: String,
-    pub quantization_level: String,
-}
 
 pub struct OllamaModels {
     pub name: String,
@@ -39,7 +17,7 @@ pub async fn fetch_models() -> Result<Vec<OllamaModels>> {
 
     let models = data["models"]
         .as_array()
-        .unwrap_or(&vec![])
+        .unwrap_or(&Vec::new())
         .iter()
         .map(|m| {
             let name = m["name"].as_str().unwrap_or("unknown").to_string();
