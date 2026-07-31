@@ -49,9 +49,10 @@ services:
     container_name: ollama_monitor
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ~/.ollama-portable/sessions:/sessions:ro
+      - ${HOME}/.ollama-portable/sessions:/sessions:ro
     environment:
       - OLLAMA_HOST=ollama_server:11434
+      - SESSIONS_DIR=/sessions
     stdin_open: true
     tty: true
     depends_on:

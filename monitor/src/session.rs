@@ -5,7 +5,6 @@ use std::path::PathBuf;
 struct LiveSessionRaw {
     active: bool,
     model: Option<String>,
-    started: Option<String>,
     elapsed_seconds: Option<u64>,
     current_cpu: Option<f64>,
     current_mem_mb: Option<f64>,
@@ -25,10 +24,15 @@ pub struct SessionState {
 }
 
 pub fn read_live_session() -> Option<SessionState> {
-    let home = dirs_next()?;
-    let path: PathBuf = [home.to_str()?, ".ollama-portable", "sessions", "live.json"]
-        .iter()
-        .collect();
+    let sessions_dir = std::env::var("SESSIONS_DIR")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .map(|h| PathBuf::from(h).join(".ollama-portable").join("sessions"))
+        })?;
+    let path = sessions_dir.join("live.json");
 
     let content = std::fs::read_to_string(path).ok()?;
     let raw: LiveSessionRaw = serde_json::from_str(&content).ok()?;
@@ -74,6 +78,3 @@ pub fn read_live_session() -> Option<SessionState> {
     })
 }
 
-fn dirs_next() -> Option<PathBuf> {
-    std::env::var("HOME").ok().map(PathBuf::from)
-}
