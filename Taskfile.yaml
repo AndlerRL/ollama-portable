@@ -180,3 +180,9 @@ tasks:
     desc: Detect host hardware and show recommended configuration
     cmds:
       - bash scripts/detect.sh --print
+
+  monitor:
+    desc: Launch Rust TUI monitor (builds on first run)
+    cmds:
+      - bash scripts/compose.sh --profile monitor up -d --build
+      - docker attach ollama_monitor

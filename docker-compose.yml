@@ -42,6 +42,24 @@ services:
     profiles:
       - webui
 
+  ollama_monitor:
+    build:
+      context: ./monitor
+      dockerfile: Dockerfile.monitor
+    container_name: ollama_monitor
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${HOME}/.ollama-portable/sessions:/sessions:ro
+    environment:
+      - OLLAMA_HOST=ollama_server:11434
+      - SESSIONS_DIR=/sessions
+    stdin_open: true
+    tty: true
+    depends_on:
+      - ollama_server
+    profiles:
+      - monitor
+
 volumes:
   ollama_storage:
     name: ollama_storage
